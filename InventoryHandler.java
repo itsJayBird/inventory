@@ -1,17 +1,21 @@
 package homeInventory;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 
 public class InventoryHandler {
 
-    private String[] items;
-    private int[] count;
+    private String[] items = {};
+    private int[] count = {};
 
     public void setInventoryItem(String item, int num) {
-        
-        // first open the save file and update inventory
+        // first check if save has been created
+        File checkSave = new File("/home/jaybird/workspace/HomeInventory/inventory.sav");
+        boolean exists = checkSave.exists();
+        if(exists==false) saveInventory(items, count);
         openInventory();
         // then update the inventory with new item
         String[] tempItems = new String[items.length + 1]; // temporary storage for updated inventory
@@ -31,71 +35,87 @@ public class InventoryHandler {
         // save inventory
         saveInventory(items, count);
     } 
-    
-    public void updateInventoryItem(String item, int num) {
+
+    public void updateInventoryItem(String item, int num, String func) {
         // first open the save file and update inventory
         openInventory();
         // then update inventory item
-        // this will find the index of the item you want to update
         int findItem = findItem(item);
         // then update the count accordingly
-        count[findItem + 1] = num;
+        if(func.contains("add")==true) {
+            count[findItem ] = count[findItem] + num;
+        } else {
+            count[findItem] = count[findItem] - num;
+        }
         // then save file to update inventory
         saveInventory(items, count);
     }
-    
+
     public void removeItem(String item) {
         // first open inventory
         openInventory();
         // then look for item you want to remove
         int findItem = findItem(item);
-        // split the item array into two arrays
-        String[] firstHalf = new String[findItem]; // array large enough to fit all items up to the one you want to remove
-        String[] secondHalf = new String[items.length - (findItem + 1)]; // array large enough to fit the remaining items
-        // this adds the first half of the array to firstHalf
-        for(int i = 0; i < (findItem + 1); i++) {
-            firstHalf[i] = items[i];
+        // split items into two arrays
+        String[] tempItemStart = Arrays.copyOfRange(items, 0, findItem); // first half of the array
+        // check if there is anything after this item
+        boolean hasError = false;
+        String[] tempItemEnd = {};
+        try {
+            tempItemEnd = Arrays.copyOfRange(items, (findItem + 1), items.length);
         }
-        // now add second half of the array to the secondHalf
-        for(int i = 0; i < secondHalf.length; i++) {
-            secondHalf[i] = items[i + (findItem + 2)];
+        catch(ArrayIndexOutOfBoundsException e) {
+            hasError = true;
         }
-        // now create a new array that will hold the new information
+        if(hasError == false) tempItemEnd = Arrays.copyOfRange(items, (findItem + 1), items.length);
+        // create new array to hold items
         String[] updatedItems = new String[items.length - 1];
-        // add first half to the new array
-        for(int i = 0; i < firstHalf.length; i++) {
-            updatedItems[i] = firstHalf[i];
+        // copy in first half of array
+        for(int i = 0; i < tempItemStart.length; i++) {
+            updatedItems[i] = tempItemStart[i];
         }
-        // add second half to the new array
-        for(int i = 0; i < secondHalf.length; i++) {
-            updatedItems[i + (firstHalf.length + 1)] = secondHalf[i];
+        // check if there is a second half of the array
+        if(hasError == false) {
+            // copy it if there is
+            for(int i = 0; i < tempItemEnd.length; i++) {
+                updatedItems[findItem] = tempItemEnd[i];
+            }
         }
-        // do the same for count
-        int[] firstInts = new int[findItem];
-        int[] secondInts = new int[count.length - (findItem + 1)];
-        for(int i = 0; i < (findItem + 1); i++) {
-            firstInts[i] = count[i];
+        // do the same for count list
+        // split items into two arrays
+        int[] tempCountStart = Arrays.copyOfRange(count, 0, findItem); // first half of the array
+        // check if there is anything after this item
+        hasError = false;
+        int[] tempCountEnd = {};
+        try {
+            tempCountEnd = Arrays.copyOfRange(count, (findItem + 1), count.length);
         }
-        for(int i = 0; i < secondHalf.length; i++) {
-            secondInts[i] = count[i + (findItem + 2)];
+        catch(ArrayIndexOutOfBoundsException e) {
+            hasError = true;
         }
+        if(hasError == false) tempCountEnd = Arrays.copyOfRange(count, (findItem + 1), count.length);
+        // create new array to hold items
         int[] updatedCount = new int[count.length - 1];
-        for(int i = 0; i < firstInts.length; i++) { 
-            updatedCount[i] = firstInts[i];
+        // copy in first half of array
+        for(int i = 0; i < tempCountStart.length; i++) {
+            updatedCount[i] = tempCountStart[i];
         }
-        for(int i = 0; i < secondInts.length; i++) {
-            updatedCount[i + (firstInts.length + 1)] = secondInts[i];
+        // check if there is a second half of the array
+        if(hasError == false) {
+            // copy it if there is
+            for(int i = 0; i < tempCountEnd.length; i++) {
+                updatedCount[findItem] = tempCountEnd[i];
+            }
         }
         // commit to memory
         items = updatedItems;
         count = updatedCount;
-        // save to file
         saveInventory(items, count);
     }
-    
+
     private int findItem(String item) {
         int findItem = 0;
-        while(items[findItem] != item) {
+        while(items[findItem].contains(item)==false) {
             findItem++;
         }
         return findItem;
@@ -107,7 +127,7 @@ public class InventoryHandler {
             System.out.println(items[i] + ": " + count[i]);
         }
     }
-    
+
     private void saveInventory(String[] inventory, int[] nums) {
         try {
             FileOutputStream saveFile = new FileOutputStream("inventory.sav"); // creates save file
@@ -119,7 +139,7 @@ public class InventoryHandler {
             exc.printStackTrace(); // If there was an error, print the info.
         }
     }
-    
+
     private void openInventory() {      
         try {
             FileInputStream saveFile = new FileInputStream("inventory.sav"); // open save file
