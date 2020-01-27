@@ -13,7 +13,7 @@ public class InventoryHandler {
 
     public void setInventoryItem(String item, int num) {
         // first check if save has been created
-        File checkSave = new File("/home/jaybird/workspace/HomeInventory/inventory.sav");
+        File checkSave = new File("inventory.sav");
         boolean exists = checkSave.exists();
         if(exists==false) saveInventory(items, count);
         openInventory();
